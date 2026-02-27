@@ -1,0 +1,113 @@
+-- Generating ;/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_hello_Runner.c;/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_assignment_validate_Runner.c;/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls_Runner.c from test/assignment1/Test_hello.c;test/assignment1/Test_assignment_validate.c;test/assignment3/Test_systemcalls.c
+-- Building executable including ;/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_hello_Runner.c;/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_assignment_validate_Runner.c;/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls_Runner.c test/assignment1/Test_hello.c;test/assignment1/Test_assignment_validate.c;test/assignment3/Test_systemcalls.c and ../examples/autotest-validate/autotest-validate.c;../examples/systemcalls/systemcalls.c
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/build
+[  7%] Building C object assignment-autotest/Unity/src/CMakeFiles/unity.dir/unity.c.o
+[ 15%] Linking C static library libunity.a
+[ 15%] Built target unity
+[ 23%] Generating ../../assignment-autotest/test/assignment1/Test_hello_Runner.c, ../../assignment-autotest/test/assignment1/Test_assignment_validate_Runner.c, ../../assignment-autotest/test/assignment3/Test_systemcalls_Runner.c, ../../assignment-autotest/test/unity_runner.c
+Test files for auto dependency generation test/assignment1/Test_hello.c test/assignment1/Test_assignment_validate.c test/assignment3/Test_systemcalls.c
+Autogenerating runner for test/assignment1/Test_hello.c
+Autogenerating runner for test/assignment1/Test_assignment_validate.c
+Autogenerating runner for test/assignment3/Test_systemcalls.c
+Autogenerating test/unity_runner.c
+[ 30%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/assignment1/Test_hello.c.o
+[ 38%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/assignment1/Test_assignment_validate.c.o
+[ 46%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/assignment3/Test_systemcalls.c.o
+[ 53%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/assignment1/Test_hello_Runner.c.o
+[ 61%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/assignment1/Test_assignment_validate_Runner.c.o
+[ 69%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/assignment3/Test_systemcalls_Runner.c.o
+[ 76%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/__/examples/autotest-validate/autotest-validate.c.o
+[ 84%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/__/examples/systemcalls/systemcalls.c.o
+[ 92%] Building C object assignment-autotest/CMakeFiles/assignment-autotest.dir/test/unity_runner.c.o
+[100%] Linking C executable assignment-autotest
+[100%] Built target assignment-autotest
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_hello.c:6:test_hello:INFO: Hello!  Your unity setup is working!
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_hello.c:4:test_hello:PASS
+
+-----------------------
+1 Tests 0 Failures 0 Ignored 
+OK
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_assignment_validate.c:9:test_assignment_validate:PASS
+
+-----------------------
+1 Tests 0 Failures 0 Ignored 
+OK
+Running tests at /home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c : function test_systemcalls
+Remove trailing newline
+Read this is a test from testfile.txt
+system() echo this is a test returned this is a test
+Remove trailing newline
+Read home is /home/lomangs from testfile.txt
+system() echo home is $HOME returned: home is /home/lomangs
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c:28:test_systemcalls:PASS
+Running tests at /home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c : function test_exec_calls
+do_exec
+command[0]: echo
+command[1]: Testing execv implementation with echo
+pid: 0
+pid 0
+error
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_hello.c:6:test_hello:INFO: Hello!  Your unity setup is working!
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_hello.c:4:test_hello:PASS
+
+-----------------------
+1 Tests 0 Failures 0 Ignored 
+OK
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment1/Test_assignment_validate.c:9:test_assignment_validate:PASS
+
+-----------------------
+1 Tests 0 Failures 0 Ignored 
+OK
+Running tests at /home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c : function test_systemcalls
+Remove trailing newline
+Read this is a test from testfile.txt
+system() echo this is a test returned this is a test
+Remove trailing newline
+Read home is /home/lomangs from testfile.txt
+system() echo home is $HOME returned: home is /home/lomangs
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c:28:test_systemcalls:PASS
+Running tests at /home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c : function test_exec_calls
+do_exec
+command[0]: echo
+command[1]: Testing execv implementation with echo
+pid: 38596
+status: 256
+test fail
+do_exec
+command[0]: /usr/bin/test
+command[1]: -f
+command[2]: echo
+pid: 38597
+status: 256
+test fail
+do_exec
+command[0]: /usr/bin/test
+command[1]: -f
+command[2]: /bin/echo
+pid: 38598
+status: 0
+test success
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c:58:test_exec_calls:PASS
+Running tests at /home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c : function test_exec_redirect_calls
+do_exec_redirect
+redirect command[0]: /bin/sh
+redirect command[1]: -c
+redirect command[2]: echo home is $HOME
+success
+Remove trailing newline
+Read home is /home/lomangs from testfile.txt
+execv /bin/sh -c echo home is $HOME returned home is /home/lomangs
+do_exec_redirect
+redirect command[0]: /bin/echo
+redirect command[1]: home is $HOME
+success
+Remove trailing newline
+Read home is $HOME from testfile.txt
+execv /bin/echo home is $HOME returned home is $HOME
+/home/lomangs/coursera/buildroot/assignments-3-and-later-lomangs/assignment-autotest/test/assignment3/Test_systemcalls.c:72:test_exec_redirect_calls:PASS
+
+-----------------------
+3 Tests 0 Failures 0 Ignored 
+OK
