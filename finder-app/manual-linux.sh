@@ -95,7 +95,7 @@ sudo mknod -m 666 ${OUTDIR}/rootfs/dev/null c 1 3
 sudo mknod -m 600 ${OUTDIR}/rootfs/dev/console c 5 1
 
 # TODO: Clean and build the writer utility
-cd $HOME/coursera/buildroot/assignments-3-and-later-lomangs/finder-app
+#cd $HOME/coursera/buildroot/assignments-3-and-later-lomangs/finder-app
 make clean
 make NEED_CROSS_COMPILE=1
 cp writer ${OUTDIR}/rootfs/home
