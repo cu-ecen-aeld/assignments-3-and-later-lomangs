@@ -4,6 +4,8 @@ else
 	CC = gcc
 endif
 
+all: writer
+
 writer: writer.c
 	$(CC) -Wall $< -o $@
 
