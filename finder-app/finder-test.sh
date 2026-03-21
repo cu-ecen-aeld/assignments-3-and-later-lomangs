@@ -11,7 +11,7 @@ WRITEDIR=/tmp/aeld-data
 
 CONF_DIR="/etc/finder-app/conf"
 WRITER_APP="/usr/bin/writer"
-FINDER_SCRIPT="finder.sh"
+FINDER_SCRIPT="/usr/bin/finder.sh"
 username=$( cat "${CONF_DIR}/username.txt" )
 
 if [ $# -lt 3 ]
