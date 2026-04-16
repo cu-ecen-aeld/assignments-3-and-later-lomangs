@@ -33,6 +33,7 @@ if [ -f conf/assignment.txt ]; then
     assignment=`cat conf/assignment.txt`
     if [ -f ./assignment-autotest/test/${assignment}/assignment-test.sh ]; then
         echo "Executing assignment test script"
+        echo "assignment: ${assignment}"
         ./assignment-autotest/test/${assignment}/assignment-test.sh $test_dir
         rc=$?
         if [ $rc -eq 0 ]; then
