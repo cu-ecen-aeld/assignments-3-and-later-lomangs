@@ -26,11 +26,15 @@ void signal_handler(int sig) {
 
 int main(int argc, char *argv[]) {
     int daemon_mode = 0;
-    if (argc > 1 && strcmp(argv[1], "-d") == 0) {
-        daemon_mode = 1;
-    }
 
     openlog("aesdsocket", LOG_PID, LOG_USER);
+
+    if (argc > 1 && strcmp(argv[1], "-d") == 0) {
+        daemon_mode = 1;
+        syslog(LOG_INFO, "Daemon Mode");
+    } else {
+        syslog(LOG_INFO, "Non-Daemon Mode");
+    }
 
     // Signal Handling
     struct sigaction sa;
@@ -60,6 +64,7 @@ int main(int argc, char *argv[]) {
 
     // DAEMON LOGIC
     if (daemon_mode) {
+        syslog(LOG_INFO, "Daemon Mode");
         pid_t pid = fork();
         if (pid < 0) {
             close(server_fd);
