@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# Variables
+DAEMON=/usr/bin/aesdsocket
+NAME=aesdsocket
+DESC="AESD Socket Server"
+
+# Check if the daemon executable exists
+if [ -x "$DAEMON" ]; then
+    echo "Ready to run!"
+fi
+
+case "$1" in
+  start)
+    echo -n "Starting $DESC: "
+    # --start: Start the process
+    # --exec: Match the executable
+    # --: Separator for arguments passed directly to your application
+    # -d: Argument for your app to run in daemon mode
+    start-stop-daemon --start --quiet --oknodo --exec $DAEMON -- -d
+    echo "$NAME."
+    ;;
+  stop)
+    echo -n "Stopping $DESC: "
+    # --stop: Terminate the process
+    # --signal TERM: Send SIGTERM (default for --stop, but explicit here)
+    # --oknodo: Exit with status 0 if it's already stopped
+    start-stop-daemon --stop --quiet --oknodo --signal TERM --exec $DAEMON
+    echo "$NAME."
+    ;;
+  restart|force-reload)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+Use code with caution.
