@@ -1,7 +1,14 @@
 #!/bin/sh
 
 # Variables
-DAEMON=/usr/bin/aesdsocket
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if [ -f "${DIR}/aesdsocket" ]; then
+    DAEMON="${DIR}/aesdsocket"
+else
+    DAEMON=/usr/bin/aesdsocket
+fi
+
+#DAEMON=/usr/bin/aesdsocket
 NAME=aesdsocket
 DESC="AESD Socket Server"
 

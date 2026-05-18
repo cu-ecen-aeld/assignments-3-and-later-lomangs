@@ -5,7 +5,7 @@ else
     CC = gcc
 endif
 
-CFLAGS ?= -Wall -Werror -g
+CFLAGS ?= -Wall -Werror -g -pthread
 TARGET = aesdsocket
 SRC = aesdsocket.c
 
