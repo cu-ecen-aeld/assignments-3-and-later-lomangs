@@ -32,6 +32,42 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
     /**
     * TODO: implement per description
     */
+    if (buffer == NULL || entry_offset_byte_rtn == NULL) {
+            return NULL;
+    }
+
+    size_t accumulated_size = 0;
+    size_t current_offset = char_offset;
+                                
+    // Always begin tracking from the oldest available data index (Tail)
+    uint8_t current_index = buffer->out_offs;
+                                            
+    // Determine the loop traversal bounds
+    uint8_t total_elements = 0;
+
+    if (buffer->full) {
+           total_elements = AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+    } else {
+        if (buffer->in_offs >= buffer->out_offs) {
+              total_elements = buffer->in_offs - buffer->out_offs;
+        } else {
+              total_elements = ( AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED - buffer->out_offs) + buffer->in_offs;
+        }
+    }
+
+    for (uint8_t i = 0; i < total_elements; i++) {
+            struct aesd_buffer_entry *entry = &buffer->entry[current_index];
+
+             if (current_offset < accumulated_size + entry->size) {
+                     *entry_offset_byte_rtn = current_offset - accumulated_size;
+                     return entry;
+            }
+
+            accumulated_size += entry->size;
+                                                                                      
+            current_index = (current_index + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+    }
+
     return NULL;
 }
 
@@ -47,6 +83,21 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     /**
     * TODO: implement per description
     */
+
+    if (buffer == NULL || add_entry == NULL) {
+            return;
+    }
+
+    buffer->entry[buffer->in_offs] = *add_entry;
+    buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+
+    if (buffer->full) {
+           buffer->out_offs = (buffer->out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+    }
+
+    if (buffer->in_offs == buffer->out_offs) {
+           buffer->full = true;
+    }
 }
 
 /**
