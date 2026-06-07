@@ -4,6 +4,9 @@
  *  Created on: Oct 23, 2019
  *      Author: Dan Walkes
  */
+#include <linux/mutex.h>
+#include <linux/cdev.h>
+#include "aesd-circular-buffer.h"
 
 #ifndef AESD_CHAR_DRIVER_AESDCHAR_H_
 #define AESD_CHAR_DRIVER_AESDCHAR_H_
@@ -28,6 +31,10 @@ struct aesd_dev
     /**
      * TODO: Add structure(s) and locks needed to complete assignment requirements
      */
+    struct aesd_circular_buffer buffer; // History tracking circular buffer
+    struct mutex lock;                  // Mutual exclusion lock for thread safety
+    char *tmp_buffer;                   // Accumulates raw partial writes
+    size_t tmp_buffer_size;             // Tracks current byte size of partial write
     struct cdev cdev;     /* Char device structure      */
 };
 

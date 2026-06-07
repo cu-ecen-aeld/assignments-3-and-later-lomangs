@@ -78,26 +78,40 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
 * Any necessary locking must be handled by the caller
 * Any memory referenced in @param add_entry must be allocated by and/or must have a lifetime managed by the caller.
 */
-void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
+const char *aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
     /**
     * TODO: implement per description
     */
+    const char *ret_ptr = NULL;
 
+    // 1. Safety check: Return NULL instead of an empty return statement
     if (buffer == NULL || add_entry == NULL) {
-            return;
+            return NULL;
     }
 
+    // 2. If the buffer is full, the item at 'in_offs' is about to be kicked out.
+    // Save its text pointer so main.c can kfree() it and avoid a memory leak.
+    if (buffer->full) {
+        ret_ptr = buffer->entry[buffer->in_offs].buffptr;
+    }
+
+    // 3. Write the new entry into the slot and advance the input offset tracker
     buffer->entry[buffer->in_offs] = *add_entry;
     buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
 
+    // 4. Maintain the FIFO read pointer offset position if we are pushing elements out
     if (buffer->full) {
            buffer->out_offs = (buffer->out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     }
 
+    // 5. Check if this write filled the circular track buffer completely
     if (buffer->in_offs == buffer->out_offs) {
            buffer->full = true;
     }
+
+    // 6. Return the kicked-out entry pointer (or NULL if the buffer wasn't full yet)
+    return ret_ptr;
 }
 
 /**

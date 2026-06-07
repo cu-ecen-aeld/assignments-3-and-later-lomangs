@@ -1,4 +1,14 @@
 #define _GNU_SOURCE
+#ifndef USE_AESD_CHAR_DEVICE
+#define USE_AESD_CHAR_DEVICE 1
+#endif
+
+#if USE_AESD_CHAR_DEVICE
+#define DATA_FILE_PATH "/dev/aesdchar"
+#else
+#define DATA_FILE_PATH "/var/tmp/aesdsocketdata"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,6 +75,7 @@ void* connection_thread(void* thread_param) {
     ssize_t bytes_read = 0;
     int newline_found = 0;
 
+    // 1. Receive loop remains identical across both implementations
     while (!newline_found && !exit_requested) {
         bytes_read = recv(data->client_fd, chunk, sizeof(chunk), 0);
         if (bytes_read < 0) {
@@ -90,7 +101,29 @@ void* connection_thread(void* thread_param) {
         }
     }
 
+    // 2. Conditional Logic handling for File/Device operations
     if (newline_found && !exit_requested) {
+#if USE_AESD_CHAR_DEVICE
+        // Low-level system calls for the device driver (Kernel handles locking)
+        int fd = open(DATA_FILE, O_RDWR);
+        if (fd >= 0) {
+            // Write incoming data packet to the driver
+            ssize_t bytes_written = write(fd, recv_buf, total_bytes_received);
+            if (bytes_written >= 0) {
+                // Seek back to position 0 to read out full 10-entry history
+                lseek(fd, 0, SEEK_SET);
+
+                char send_buf[BUFFER_SIZE];
+                ssize_t bytes_to_send;
+                // Read from device driver until EOF (0) is returned
+                while ((bytes_to_send = read(fd, send_buf, sizeof(send_buf))) > 0) {
+                    send(data->client_fd, send_buf, bytes_to_send, 0);
+                }
+            }
+            close(fd); // Instantly close the driver file descriptor when finished
+        }
+#else
+        // Legacy file implementation for standard /var/tmp path
         pthread_mutex_lock(&file_mutex);
         FILE *f = fopen(DATA_FILE, "a+");
         if (f != NULL) {
@@ -105,6 +138,7 @@ void* connection_thread(void* thread_param) {
             fclose(f);
         }
         pthread_mutex_unlock(&file_mutex);
+#endif
     }
 
     free(recv_buf);
@@ -223,7 +257,25 @@ int main(int argc, char *argv[]) {
     }
 
     pthread_t time_tid;
-    pthread_create(&time_tid, NULL, timestamp_thread, NULL);
+//    pthread_create(&time_tid, NULL, timestamp_thread, NULL);
+
+    #if !USE_AESD_CHAR_DEVICE
+    // Start your timestamp thread here from Assignment 6
+    if (pthread_create(&tim_tid, NULL, timestamp_thread, NULL) != 0) {
+           // Handle error...
+     }
+     #endif
+
+    #ifndef USE_AESD_CHAR_DEVICE
+    #define USE_AESD_CHAR_DEVICE 1
+    #endif
+
+    #if USE_AESD_CHAR_DEVICE
+    #define DATA_FILE_PATH "/dev/aesdchar"
+    #else
+    #define DATA_FILE_PATH "/var/tmp/aesdsocketdata"
+    #endif
+
 
     struct sockaddr_storage client_addr;
     socklen_t addr_size = sizeof(client_addr);
@@ -280,7 +332,14 @@ int main(int argc, char *argv[]) {
         SLIST_FOREACH_SAFE(tmp_node, &head, entries, nxt_node) {
             if (tmp_node->is_complete) {
                 SLIST_REMOVE(&head, tmp_node, thread_data, entries);
-                pthread_join(tmp_node->thread_id, NULL);
+//                pthread_join(tmp_node->thread_id, NULL);
+
+                #if !USE_AESD_CHAR_DEVICE
+                // Signal and join the timestamp thread
+                    pthread_cancel(tmp_node->thread_id);
+                    pthread_join(tmp_node->thread_id, NULL);
+                #endif
+
                 free(tmp_node);
             }
         }
@@ -302,7 +361,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (access(DATA_FILE, F_OK) == 0) {
+    #if !USE_AESD_CHAR_DEVICE
         unlink(DATA_FILE);
+    #endif        
     }
     if (server_fd >= 0) {
         close(server_fd);
