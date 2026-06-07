@@ -32,19 +32,18 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct
     /**
     * TODO: implement per description
     */
+    size_t accumulated_size = 0;
+    size_t current_offset = char_offset;
+    uint8_t current_index = 0;
+    uint8_t total_elements = 0;
+
     if (buffer == NULL || entry_offset_byte_rtn == NULL) {
             return NULL;
     }
 
-    size_t accumulated_size = 0;
-    size_t current_offset = char_offset;
-                                
     // Always begin tracking from the oldest available data index (Tail)
-    uint8_t current_index = buffer->out_offs;
+    current_index = buffer->out_offs;
                                             
-    // Determine the loop traversal bounds
-    uint8_t total_elements = 0;
-
     if (buffer->full) {
            total_elements = AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     } else {
