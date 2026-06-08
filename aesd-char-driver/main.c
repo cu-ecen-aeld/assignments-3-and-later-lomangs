@@ -131,25 +131,24 @@ static ssize_t aesd_write(struct file *filp, const char __user *buf, size_t coun
         goto out;
     }
 
-    // 4. Scan the newly appended data bytes to look for a command terminator (\n)
-    for (i = dev->tmp_buffer_size; i < dev->tmp_buffer_size + count; i++) {
+    // 4. Update the buffer tracker size with the actual copied bytes
+    dev->tmp_buffer_size += count;
+    retval = count;                                                                                                                                                     
+    // 5. Scan the newly appended data bytes to look for a command terminator (\n)
+    // Check if a newline exists anywhere in the newly written block
+    for (i = dev->tmp_buffer_size - count; i < dev->tmp_buffer_size; i++) {
        if (dev->tmp_buffer[i] == '\n') {
            newline_found = true;
-           break; 
+           break;
        }
     }
-                                                                                                                                                     
-    // Update the buffer tracker size and prepare the return value
-    dev->tmp_buffer_size += count;
-    retval = count; 
 
-   // 5. If a newline is hit, push the completed string packet to the circular buffer
+    // 6. If a newline is found, finalize this entry
     if (newline_found) {
         new_entry.buffptr = dev->tmp_buffer;
         new_entry.size = dev->tmp_buffer_size;
 
-        // Add the entry. If the history buffer exceeds 10 elements, 
-        // it returns the oldest element's pointer so we can avoid memory leaks.
+        // Add the entry to the circular buffer
         freed_entry_buff = aesd_circular_buffer_add_entry(&dev->buffer, &new_entry);
         if (freed_entry_buff != NULL) {
             kfree(freed_entry_buff);
@@ -158,7 +157,7 @@ static ssize_t aesd_write(struct file *filp, const char __user *buf, size_t coun
         // Reset tracking fields so the next write starts fresh
         dev->tmp_buffer = NULL;
         dev->tmp_buffer_size = 0;
-   }
+    }
 
    out:
        mutex_unlock(&dev->lock);
