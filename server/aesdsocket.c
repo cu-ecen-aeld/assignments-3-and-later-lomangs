@@ -3,12 +3,6 @@
 #define USE_AESD_CHAR_DEVICE 1
 #endif
 
-#if USE_AESD_CHAR_DEVICE
-#define DATA_FILE_PATH "/dev/aesdchar"
-#else
-#define DATA_FILE_PATH "/var/tmp/aesdsocketdata"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +30,13 @@
 #endif
 
 #define PORT "9000"
+
+#if USE_AESD_CHAR_DEVICE
+#define DATA_FILE "/dev/aesdchar"
+#else
 #define DATA_FILE "/var/tmp/aesdsocketdata"
+#endif
+
 #define BUFFER_SIZE 1024
 
 volatile sig_atomic_t exit_requested = 0;
@@ -148,6 +148,7 @@ void* connection_thread(void* thread_param) {
     return NULL;
 }
 
+#ifndef USE_AESD_CHAR_DEVICE
 void* timestamp_thread(void* arg) {
     (void)arg;
     struct timespec ts;
@@ -184,6 +185,7 @@ void* timestamp_thread(void* arg) {
     }
     return NULL;
 }
+#endif
 
 int main(int argc, char *argv[]) {
     int daemon_mode = 0;
@@ -256,10 +258,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
+#ifndef USE_AESD_CHAR_DEVICE
     pthread_t time_tid;
+#endif    
 //    pthread_create(&time_tid, NULL, timestamp_thread, NULL);
 
-    #if !USE_AESD_CHAR_DEVICE
+    #ifndef USE_AESD_CHAR_DEVICE
     // Start your timestamp thread here from Assignment 6
     if (pthread_create(&tim_tid, NULL, timestamp_thread, NULL) != 0) {
            // Handle error...
@@ -271,9 +275,9 @@ int main(int argc, char *argv[]) {
     #endif
 
     #if USE_AESD_CHAR_DEVICE
-    #define DATA_FILE_PATH "/dev/aesdchar"
+    #define DATA_FILE "/dev/aesdchar"
     #else
-    #define DATA_FILE_PATH "/var/tmp/aesdsocketdata"
+    #define DATA_FILE "/var/tmp/aesdsocketdata"
     #endif
 
 
@@ -349,7 +353,9 @@ int main(int argc, char *argv[]) {
     syslog(LOG_INFO, "Caught signal, exiting");
 
     // Join timer thread cleanly
+#ifndef USE_AESD_CHAR_DEVICE    
     pthread_join(time_tid, NULL);
+#endif
 
     // Join remaining connection threads cleanly
     thread_data_t *curr;
