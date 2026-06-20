@@ -18,6 +18,8 @@
 #include <linux/cdev.h>
 #include <linux/fs.h> // file_operations
 #include "aesdchar.h"
+#include "aesd_ioctl.h"
+
 int aesd_major =   0; // use dynamic major
 int aesd_minor =   0;
 
@@ -48,7 +50,7 @@ static int aesd_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
-loff_t aesd_llseek(struct file *filp, loff_t offset, int whence)
+static loff_t aesd_llseek(struct file *filp, loff_t offset, int whence)
 {
     struct aesd_dev *dev = filp->private_data;
     loff_t total_size = 0;
@@ -216,7 +218,64 @@ static ssize_t aesd_write(struct file *filp, const char __user *buf, size_t coun
        return retval;
 }
 
-long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+static long aesd_adjust_file_offset(struct file *filp, uint32_t write_cmd, uint32_t write_cmd_offset)
+{
+    struct aesd_dev *dev = filp->private_data;
+    struct aesd_buffer_entry *entry;
+    uint8_t index;
+    uint32_t num_commands = 0;
+    loff_t target_fpos = 0;
+    long retval = 0;
+
+    // 1. Lock the device state to prevent race conditions during buffer traversal
+    if (mutex_lock_interruptible(&dev->lock)) {
+        return -ERESTARTSYS;
+    }
+
+    // 2. Count the valid entries currently available inside the circular buffer
+    AESD_CIRCULAR_BUFFER_FOREACH(entry, &dev->buffer, index) {
+        if (entry->buffptr != NULL) {
+            num_commands++;
+        }
+    }
+
+    // 3. Validate command index: can't seek to a write index that doesn't exist
+    if (write_cmd >= num_commands) {
+        retval = -EINVAL;
+        goto out;
+    }
+
+    // 4. Reset counter to walk through the entries and sum up byte offsets
+    num_commands = 0;
+    AESD_CIRCULAR_BUFFER_FOREACH(entry, &dev->buffer, index) {
+        if (entry->buffptr != NULL) {
+            // Check if we have matched the targeted command index
+            if (num_commands == write_cmd) {
+                // Validate offset: offset cannot exceed or equal string size
+                if (write_cmd_offset >= entry->size) {
+                    retval = -EINVAL;
+                    goto out;
+                }
+                // Complete final global file position translation
+                target_fpos += write_cmd_offset;
+                break;
+            }
+            // Accumulate preceding entry lengths to calculate linear byte offset
+            target_fpos += entry->size;
+            num_commands++;
+        }
+    }
+
+    // 5. Commit the calculated target position to the persistent file pointer
+    filp->f_pos = target_fpos;
+
+out:
+    // 6. Always unlock the device mutex before returning
+    mutex_unlock(&dev->lock);
+    return retval;
+}
+
+static long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
     long retval = 0;
 
