@@ -67,6 +67,17 @@ void get_ip_str(const struct sockaddr *sa, char *s, size_t maxlen) {
     }
 }
 
+int parse_ioctl_command(const char *buffer, uint32_t *write_cmd, uint32_t *write_cmd_offset)
+{
+    if (strncmp(buffer, "AESDCHAR_IOCSEEKTO:", 19) == 0) {
+        if (sscanf(buffer + 19, "%u,%u", write_cmd, write_cmd_offset) == 2) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
 void* connection_thread(void* thread_param) {
     thread_data_t *data = (thread_data_t *)thread_param;
     char *recv_buf = NULL;
@@ -122,6 +133,116 @@ void* connection_thread(void* thread_param) {
             }
             close(fd); // Instantly close the driver file descriptor when finished
         }
+#else
+        // Legacy file implementation for standard /var/tmp path
+        pthread_mutex_lock(&file_mutex);
+        FILE *f = fopen(DATA_FILE, "a+");
+        if (f != NULL) {
+            fwrite(recv_buf, 1, total_bytes_received, f);
+            fflush(f);
+            fseek(f, 0, SEEK_SET);
+            char send_buf[BUFFER_SIZE];
+            size_t bytes_to_send;
+            while ((bytes_to_send = fread(send_buf, 1, sizeof(send_buf), f)) > 0) {
+                send(data->client_fd, send_buf, bytes_to_send, 0);
+            }
+            fclose(f);
+        }
+        pthread_mutex_unlock(&file_mutex);
+#endif
+    }
+
+    free(recv_buf);
+    close(data->client_fd);
+    syslog(LOG_INFO, "Closed connection from %s", data->client_ip);
+    data->is_complete = 1;
+    return NULL;
+}
+*/
+
+void* connection_thread(void* thread_param) {
+    thread_data_t *data = (thread_data_t *)thread_param;
+    char *recv_buf = NULL;
+    size_t total_bytes_received = 0;
+    char chunk[BUFFER_SIZE];
+    ssize_t bytes_read = 0;
+    int newline_found = 0;
+
+    // 1. Receive loop remains identical across both implementations
+    while (!newline_found && !exit_requested) {
+        bytes_read = recv(data->client_fd, chunk, sizeof(chunk), 0);
+        if (bytes_read < 0) {
+            if (errno == EINTR) continue;
+            break;
+        } else if (bytes_read == 0) {
+            break;
+        }
+
+        char *new_buf = realloc(recv_buf, total_bytes_received + bytes_read);
+        if (new_buf == NULL) {
+            free(recv_buf);
+            close(data->client_fd);
+            data->is_complete = 1;
+            return NULL;
+        }
+        recv_buf = new_buf;
+        memcpy(recv_buf + total_bytes_received, chunk, bytes_read);
+        total_bytes_received += bytes_read;
+
+        if (total_bytes_received > 0 && recv_buf[total_bytes_received - 1] == '\n') {
+            newline_found = 1;
+        }
+    }
+
+    // 2. Conditional Logic handling for File/Device operations
+    if (newline_found && !exit_requested) {
+#if USE_AESD_CHAR_DEVICE
+        // ====================================================================
+        // INTEGRATED CODE BLOCK REPLACING YOUR OLD READ/WRITE SEQUENCES
+        // ====================================================================
+        uint32_t write_cmd = 0;
+        uint32_t write_cmd_offset = 0;
+
+        // Open the driver device once
+        int fd = open(DATA_FILE, O_RDWR);
+        if (fd >= 0) {
+
+            // Create a temporary null-terminated copy of recv_buf so sscanf is safe
+            char *temp_cmd_buf = malloc(total_bytes_received + 1);
+            if (temp_cmd_buf != NULL) {
+                memcpy(temp_cmd_buf, recv_buf, total_bytes_received);
+                temp_cmd_buf[total_bytes_received] = '\0';
+
+                // Check if incoming buffer contains the special seek command
+                if (parse_ioctl_command(temp_cmd_buf, &write_cmd, &write_cmd_offset)) {
+                    #include "aesd_ioctl.h" // Inline inclusion or put at top of file
+                    struct aesd_seekto seekto;
+                    seekto.write_cmd = write_cmd;
+                    seekto.write_cmd_offset = write_cmd_offset;
+
+                    // Execute ioctl command on the driver using the open file descriptor
+                    if (ioctl(fd, AESDCHAR_IOCSEEKTO, &seekto) < 0) {
+                        perror("ioctl AESDCHAR_IOCSEEKTO failed");
+                    }
+                    // DO NOT write the command string to the device.
+                }
+                else {
+                    // Normal Operation: Write the payload to the driver
+                    write(fd, recv_buf, total_bytes_received);
+                }
+                free(temp_cmd_buf);
+            }
+
+            // Stream content back from the CURRENT driver offset to the client socket
+            char send_buf[BUFFER_SIZE];
+            ssize_t bytes_to_send;
+            while ((bytes_to_send = read(fd, send_buf, sizeof(send_buf))) > 0) {
+                send(data->client_fd, send_buf, bytes_to_send, 0);
+            }
+
+            close(fd); // Close the file descriptor after the operation is complete
+        }
+        // ====================================================================
 #else
         // Legacy file implementation for standard /var/tmp path
         pthread_mutex_lock(&file_mutex);

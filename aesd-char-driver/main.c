@@ -48,6 +48,58 @@ static int aesd_release(struct inode *inode, struct file *filp)
     return 0;
 }
 
+loff_t aesd_llseek(struct file *filp, loff_t offset, int whence)
+{
+    struct aesd_dev *dev = filp->private_data;
+    loff_t total_size = 0;
+    loff_t retval = 0;
+    struct aesd_buffer_entry *entry;
+    uint8_t index;
+
+    if (mutex_lock_interruptible(&dev->lock)) {
+        return -ERESTARTSYS;
+    }
+
+    // Calculate total buffer size across all completed entry writes
+    AESD_CIRCULAR_BUFFER_FOREACH(entry, &dev->buffer, index) {
+        if (entry->buffptr != NULL) {
+            total_size += entry->size;
+        }
+    }
+
+    // Determine target position based on seek type
+    switch (whence) {
+        case SEEK_SET:
+            retval = offset;
+            break;
+
+        case SEEK_CUR:
+            retval = filp->f_pos + offset;
+            break;
+
+        case SEEK_END:
+            retval = total_size + offset;
+            break;
+
+        default:
+            retval = -EINVAL;
+            goto out;
+    }
+
+    // Check bounds: cannot seek before 0 or past the last byte of content
+    if (retval < 0 || retval > total_size) {
+        retval = -EINVAL;
+        goto out;
+    }
+
+    // Commit the new file position
+    filp->f_pos = retval;
+
+out:
+    mutex_unlock(&dev->lock);
+    return retval;
+}
+
 static ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
 {
@@ -164,12 +216,44 @@ static ssize_t aesd_write(struct file *filp, const char __user *buf, size_t coun
        return retval;
 }
 
+long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+    long retval = 0;
+
+    // Check command type and magic number bounds according to ioctl standards
+    if (_IOC_TYPE(cmd) != AESD_IOC_MAGIC) return -ENOTTY;
+    if (_IOC_NR(cmd) > AESDCHAR_IOC_MAXNR) return -ENOTTY;
+
+    switch (cmd) {
+        case AESDCHAR_IOCSEEKTO: {
+            struct aesd_seekto seekto;
+
+            // Safely copy the 2-value structure from user space
+            if (copy_from_user(&seekto, (const void __user *)arg, sizeof(seekto))) {
+                return -EFAULT;
+            }
+
+            // Perform the absolute buffer translation
+            retval = aesd_adjust_file_offset(filp, seekto.write_cmd, seekto.write_cmd_offset);
+            break;
+        }
+
+        default:
+            retval = -ENOTTY;
+            break;
+    }
+
+    return retval;
+}
+
 struct file_operations aesd_fops = {
-    .owner =    THIS_MODULE,
-    .read =     aesd_read,
-    .write =    aesd_write,
-    .open =     aesd_open,
-    .release =  aesd_release,
+    .owner =            THIS_MODULE,
+    .llseek =           aesd_llseek,
+    .read =             aesd_read,
+    .write =            aesd_write,
+    .unlocked_ioctl =   aesd_ioctl,
+    .open =             aesd_open,
+    .release =          aesd_release,
 };
 
 static int aesd_setup_cdev(struct aesd_dev *dev)

@@ -20,6 +20,9 @@ else
     CFLAGS += -DUSE_AESD_CHAR_DEVICE=0
 endif
 
+INC_DIR ?= ../aesd-char-driver
+CFLAGS += -I$(INC_DIR)
+
 TARGET = aesdsocket
 SRC = aesdsocket.c
 
